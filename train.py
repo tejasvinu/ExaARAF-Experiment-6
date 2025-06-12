@@ -8,6 +8,7 @@ import torch
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, Optional, List, Tuple
+import warnings # Added import
 
 import pandas as pd
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support, classification_report
@@ -28,6 +29,7 @@ from accelerate import Accelerator
 
 def setup_logging(log_level: str = "INFO") -> None:
     """Setup logging configuration."""
+    warnings.filterwarnings('ignore') # Add this line to ignore warnings
     logging.basicConfig(
         level=getattr(logging, log_level.upper()),
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -347,20 +349,35 @@ def main():
     # Setup
     setup_logging(args.log_level)
     set_random_seed(args.seed)
+
+    # Create unique output directory
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    run_number = 1
+    while True:
+        output_dir_name = f"run_{run_number}_{timestamp}"
+        current_output_dir = os.path.join(args.output_dir, output_dir_name)
+        if not os.path.exists(current_output_dir):
+            os.makedirs(current_output_dir)
+            break
+        run_number += 1
     
-    # Create output directory
-    os.makedirs(args.output_dir, exist_ok=True)
+    args.output_dir = current_output_dir # Update args with the new output_dir
+    args.logging_dir = os.path.join(current_output_dir, "logs") # Update logging_dir
     os.makedirs(args.logging_dir, exist_ok=True)
-    
+
+    logging.info(f"Output directory: {args.output_dir}") # Print the output directory
+    print(f"Results will be stored in: {args.output_dir}")
+
     # Save experiment configuration
     save_experiment_config(args, args.output_dir)
     
     # Initialize wandb if specified
     if args.report_to == "wandb":
+        wandb_run_name = args.wandb_run_name if args.wandb_run_name else output_dir_name
         wandb.init(
             project=args.wandb_project,
             entity=args.wandb_entity,
-            name=args.wandb_run_name,
+            name=wandb_run_name,
             config=vars(args)
         )
     
