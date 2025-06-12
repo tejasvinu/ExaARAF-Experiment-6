@@ -233,13 +233,17 @@ def load_and_prepare_dataset(args: argparse.Namespace) -> Tuple[DatasetDict, Lis
 
 def preprocess_function(examples: Dict[str, Any], tokenizer: AutoTokenizer, args: argparse.Namespace) -> Dict[str, Any]:
     """Preprocess function for tokenization."""
-    return tokenizer(
+    # Tokenize texts without returning torch tensors to allow dynamic padding
+    tokenized = tokenizer(
         examples[args.text_column],
         truncation=args.truncation,
         padding=args.padding,
-        max_length=args.max_length,
-        return_tensors="pt"
+        max_length=args.max_length
     )
+    # Include labels if present
+    if args.label_column in examples:
+        tokenized['labels'] = examples[args.label_column]
+    return tokenized
 
 
 def compute_metrics(eval_pred: EvalPrediction) -> Dict[str, float]:
