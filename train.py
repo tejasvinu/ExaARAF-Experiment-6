@@ -385,6 +385,7 @@ def main():
     tokenized_dataset = dataset.map(
         lambda examples: preprocess_function(examples, tokenizer, args),
         batched=True,
+        remove_columns=[args.text_column],  # Remove original text column
         desc="Tokenizing"
     )
     
