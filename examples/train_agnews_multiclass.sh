@@ -1,4 +1,9 @@
 #!/bin/bash
+#SBATCH --job-name=heavy_test_job
+#SBATCH --output=heavy_test_job_output.log
+#SBATCH --error=heavy_test_job_error.log
+#SBATCH --time=03:00:00
+#SBATCH --ntasks=24
 # Multi-class text classification on AG News dataset
 
 python train.py \

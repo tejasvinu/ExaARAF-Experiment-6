@@ -1,7 +1,12 @@
 #!/bin/bash
+#SBATCH --job-name=heavy_test_job
+#SBATCH --output=heavy_test_job_output.log
+#SBATCH --error=heavy_test_job_error.log
+#SBATCH --time=03:00:00
+#SBATCH --ntasks=24
 # Advanced training with Weights & Biases tracking
 
-python train.py \
+/opt/miniforge3/bin/python train.py \
     --dataset_name imdb \
     --model_name bert-large-uncased \
     --num_labels 2 \
