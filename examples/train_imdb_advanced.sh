@@ -20,9 +20,9 @@ python train.py \
     --logging_steps 50 \
     --evaluation_strategy steps \
     --eval_steps 500 \
-    --save_strategy steps \
-    --save_steps 500 \
-    --save_total_limit 3 \
+    --save_strategy "no" \
+    --save_steps 1000 \
+    --save_total_limit 1 \
     --load_best_model_at_end true \
     --metric_for_best_model eval_f1 \
     --early_stopping_patience 3 \
