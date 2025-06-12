@@ -1,0 +1,101 @@
+# Python Environment
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.conda/
+
+# Training Results and Outputs
+results/
+logs/
+outputs/
+evaluation_results/
+analysis_results/
+checkpoints/
+wandb/
+tensorboard_logs/
+
+# Model Files (add if you want to ignore saved models)
+# *.bin
+# *.pt
+# *.pth
+# pytorch_model.bin
+# model.safetensors
+
+# Data Files (add specific patterns if needed)
+# *.csv
+# *.json
+# *.tsv
+# data/
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+*.ipynb
+
+# IDE and Editor Files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary Files
+*.tmp
+*.temp
+temp/
+tmp/
+
+# Log Files
+*.log
+*.out
+*.err
+
+# Cache Files
+.cache/
+.pytest_cache/
+
+# Configuration Files (add if they contain sensitive info)
+# config.yaml
+# .env
+
+# Example output files
+example_outputs/
+test_results/
+quick_test/
+
+# Backup Files
+*.bak
+*.backup
