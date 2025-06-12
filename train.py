@@ -282,7 +282,7 @@ def create_trainer(
         adam_epsilon=args.adam_epsilon,
         max_grad_norm=args.max_grad_norm,
         lr_scheduler_type=args.lr_scheduler_type,
-        evaluation_strategy=args.evaluation_strategy,
+        eval_strategy=args.evaluation_strategy,
         eval_steps=args.eval_steps,
         save_strategy=args.save_strategy,
         save_steps=args.save_steps,
