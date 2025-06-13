@@ -118,7 +118,7 @@ def parse_arguments() -> argparse.Namespace:
                        help="Learning rate scheduler type")
     
     # Evaluation arguments
-    parser.add_argument("--evaluation_strategy", type=str, default="epoch",
+    parser.add_argument("--evaluation_strategy", type=str, default="no",
                        choices=["no", "steps", "epoch"],
                        help="Evaluation strategy")
     parser.add_argument("--eval_steps", type=int, default=500,
