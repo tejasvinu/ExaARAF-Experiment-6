@@ -157,18 +157,16 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument("--wandb_entity", type=str, default=None,
                        help="Weights & Biases entity name")
     parser.add_argument("--wandb_run_name", type=str, default=None,
-                       help="Weights & Biases run name")
-    
-    # Hardware arguments
+                       help="Weights & Biases run name")    # Hardware arguments
     parser.add_argument("--device", type=str, default="auto",
                        choices=["auto", "cpu", "cuda"],
                        help="Device to use for training")
-    parser.add_argument("--fp16", type=bool, default=False,
-                       help="Use mixed precision training")
+    parser.add_argument("--fp16", type=bool, default=True,
+                       help="Use mixed precision training (enabled by default for GPU performance)")
     parser.add_argument("--bf16", type=bool, default=False,
-                       help="Use bfloat16 precision")
-    parser.add_argument("--dataloader_num_workers", type=int, default=0,
-                       help="Number of dataloader workers")
+                       help="Use bfloat16 precision (use instead of fp16 on newer GPUs)")
+    parser.add_argument("--dataloader_num_workers", type=int, default=4,
+                       help="Number of dataloader workers (increased for better GPU utilization)")
     
     # Reproducibility arguments
     parser.add_argument("--seed", type=int, default=42,
@@ -336,6 +334,70 @@ def save_experiment_config(args: argparse.Namespace, output_dir: str) -> None:
     logging.info(f"Experiment configuration saved to {config_path}")
 
 
+def setup_device(args: argparse.Namespace) -> str:
+    """Setup and configure device for training."""
+    if args.device == "auto":
+        if torch.cuda.is_available():
+            device = "cuda"
+            gpu_count = torch.cuda.device_count()
+            logging.info(f"CUDA is available! Using GPU(s). Device count: {gpu_count}")
+            for i in range(gpu_count):
+                gpu_name = torch.cuda.get_device_name(i)
+                gpu_memory = torch.cuda.get_device_properties(i).total_memory / (1024**3)
+                gpu_capability = torch.cuda.get_device_properties(i).major
+                logging.info(f"GPU {i}: {gpu_name} ({gpu_memory:.1f} GB, Compute Capability: {gpu_capability}.x)")
+                
+                # Suggest optimal precision based on GPU architecture
+                if gpu_capability >= 8:  # Ampere (A100, RTX 30xx) and newer
+                    if not args.bf16:
+                        logging.info(f"GPU {i} supports BF16 - consider using --bf16=True for better performance")
+                elif gpu_capability >= 7:  # Volta (V100) and Turing (RTX 20xx)
+                    if not args.fp16:
+                        logging.info(f"GPU {i} supports FP16 - using --fp16=True for better performance")
+        else:
+            device = "cpu"
+            logging.warning("CUDA is not available. Using CPU for training.")
+            if args.fp16 or args.bf16:
+                logging.warning("Mixed precision training disabled on CPU.")
+                args.fp16 = False
+                args.bf16 = False
+    elif args.device == "cuda":
+        if torch.cuda.is_available():
+            device = "cuda"  
+            gpu_count = torch.cuda.device_count()
+            logging.info(f"Forced CUDA usage. Device count: {gpu_count}")
+            for i in range(gpu_count):
+                gpu_name = torch.cuda.get_device_name(i)
+                gpu_memory = torch.cuda.get_device_properties(i).total_memory / (1024**3)
+                gpu_capability = torch.cuda.get_device_properties(i).major
+                logging.info(f"GPU {i}: {gpu_name} ({gpu_memory:.1f} GB, Compute Capability: {gpu_capability}.x)")
+        else:
+            logging.error("CUDA requested but not available! Falling back to CPU.")
+            device = "cpu"
+            args.fp16 = False
+            args.bf16 = False
+    else:
+        device = "cpu"
+        logging.info("Using CPU for training as requested.")
+        if args.fp16 or args.bf16:
+            logging.warning("Mixed precision training disabled on CPU.")
+            args.fp16 = False
+            args.bf16 = False
+    
+    return device
+
+
+def log_gpu_memory_usage():
+    """Log current GPU memory usage."""
+    if torch.cuda.is_available():
+        for i in range(torch.cuda.device_count()):
+            memory_allocated = torch.cuda.memory_allocated(i) / (1024**3)
+            memory_reserved = torch.cuda.memory_reserved(i) / (1024**3)
+            memory_total = torch.cuda.get_device_properties(i).total_memory / (1024**3)
+            logging.info(f"GPU {i} Memory: {memory_allocated:.2f}GB allocated, "
+                        f"{memory_reserved:.2f}GB reserved, {memory_total:.2f}GB total")
+
+
 def main():
     """Main training function."""
     args = parse_arguments()
@@ -343,7 +405,24 @@ def main():
     # Setup
     setup_logging(args.log_level)
     set_random_seed(args.seed)
-
+    
+    # Setup device and optimize GPU settings
+    device = setup_device(args)
+    
+    # Enable GPU optimizations if using CUDA
+    if device == "cuda":
+        # Enable TensorFloat-32 (TF32) on Ampere GPUs for better performance
+        torch.backends.cuda.matmul.allow_tf32 = True
+        torch.backends.cudnn.allow_tf32 = True
+        
+        # Enable cuDNN benchmark mode for consistent input sizes
+        torch.backends.cudnn.benchmark = True
+        
+        # Optimize GPU memory usage
+        torch.cuda.empty_cache()
+        
+        logging.info("GPU optimizations enabled: TF32, cuDNN benchmark")
+    
     # Create unique output directory
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     run_number = 1
@@ -361,7 +440,19 @@ def main():
 
     logging.info(f"Output directory: {args.output_dir}") # Print the output directory
     print(f"Results will be stored in: {args.output_dir}")
-
+    
+    # Print GPU optimization summary
+    if device == "cuda":
+        print("🚀 GPU Training Configuration:")
+        print(f"   ✓ Device: {device}")
+        print(f"   ✓ Mixed Precision: FP16={args.fp16}, BF16={args.bf16}")
+        print(f"   ✓ DataLoader Workers: {args.dataloader_num_workers}")
+        print(f"   ✓ GPU Optimizations: TF32, cuDNN benchmark enabled")
+    else:
+        print(f"💻 CPU Training Configuration:")
+        print(f"   ✓ Device: {device}")
+        print(f"   ✓ DataLoader Workers: {args.dataloader_num_workers}")
+    
     # Save experiment configuration
     save_experiment_config(args, args.output_dir)
     
@@ -411,10 +502,19 @@ def main():
     # Training
     if args.do_train:
         logging.info("Starting training")
+        
+        # Log initial GPU memory usage
+        if device == "cuda":
+            log_gpu_memory_usage()
+        
         if args.resume_from_checkpoint:
             trainer.train(resume_from_checkpoint=args.resume_from_checkpoint)
         else:
             trainer.train()
+        
+        # Log final GPU memory usage
+        if device == "cuda":
+            log_gpu_memory_usage()
         
         # Save final model
         trainer.save_model()
