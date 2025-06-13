@@ -19,7 +19,8 @@
     --weight_decay 0.01 \
     --warmup_steps 500 \
     --logging_steps 100 \
-    --save_strategy no \
+    --evaluation_strategy epoch \
+    --save_strategy epoch \
     --load_best_model_at_end true \
     --report_to tensorboard \
     --seed 42

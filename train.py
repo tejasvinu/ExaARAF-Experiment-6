@@ -116,8 +116,7 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument("--lr_scheduler_type", type=str, default="linear",
                        choices=["linear", "cosine", "cosine_with_restarts", "polynomial", "constant", "constant_with_warmup"],
                        help="Learning rate scheduler type")
-    
-    # Evaluation arguments
+      # Evaluation arguments
     parser.add_argument("--evaluation_strategy", type=str, default="epoch",
                        choices=["no", "steps", "epoch"],
                        help="Evaluation strategy")
@@ -125,11 +124,8 @@ def parse_arguments() -> argparse.Namespace:
                        help="Number of steps between evaluations")
     parser.add_argument("--save_strategy", type=str, default="no",
                        choices=["no", "steps", "epoch"],
-                       help="Save strategy")
-    parser.add_argument("--save_steps", type=int, default=500,
-                       help="Number of steps between saves")
-    parser.add_argument("--save_total_limit", type=int, default=3,
-                       help="Maximum number of checkpoints to save")
+                       help="Save strategy (intermediate checkpoint saving disabled)")
+    # Removed save_steps and save_total_limit to disable intermediate checkpoint saving
     parser.add_argument("--load_best_model_at_end", type=bool, default=True,
                        help="Load best model at end of training")
     parser.add_argument("--metric_for_best_model", type=str, default="eval_accuracy",
@@ -287,12 +283,10 @@ def create_trainer(
         adam_beta2=args.adam_beta2,
         adam_epsilon=args.adam_epsilon,
         max_grad_norm=args.max_grad_norm,
-        lr_scheduler_type=args.lr_scheduler_type,
-        eval_strategy=args.evaluation_strategy,
+        lr_scheduler_type=args.lr_scheduler_type,        eval_strategy=args.evaluation_strategy,
         eval_steps=args.eval_steps,
         save_strategy=args.save_strategy,
-        save_steps=args.save_steps,
-        save_total_limit=args.save_total_limit,
+        # Removed save_steps and save_total_limit to disable intermediate checkpoint saving
         load_best_model_at_end=args.load_best_model_at_end,
         metric_for_best_model=args.metric_for_best_model,
         greater_is_better=args.greater_is_better,
