@@ -20,8 +20,9 @@ python train.py \
     --warmup_steps 100 \
     --logging_steps 50 \
     --evaluation_strategy epoch \
-    --save_strategy epoch \
-    --load_best_model_at_end true \
+    --save_strategy no \
+    --load_best_model_at_end false \
     --early_stopping_patience 2 \
     --report_to tensorboard \
+    --eval_on_train true \
     --seed 42

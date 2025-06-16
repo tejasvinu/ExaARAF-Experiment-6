@@ -27,8 +27,8 @@ python train.py \
     --logging_steps 50 \
     --evaluation_strategy steps \
     --eval_steps 500 \
-    --save_strategy "no" \
-    --load_best_model_at_end true \
+    --save_strategy no \
+    --load_best_model_at_end false \
     --metric_for_best_model eval_f1 \
     --early_stopping_patience 3 \
     --early_stopping_threshold 0.001 \
@@ -37,4 +37,5 @@ python train.py \
     --run_name imdb_bert_large_cosine \
     --fp16 true \
     --dataloader_num_workers 2 \
+    --eval_on_train true \
     --seed 42

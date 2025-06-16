@@ -125,13 +125,12 @@ def parse_arguments() -> argparse.Namespace:
                        choices=["no", "steps", "epoch"],
                        help="Evaluation strategy")
     parser.add_argument("--eval_steps", type=int, default=500,
-                       help="Number of steps between evaluations")
+                       help="Number of steps between evaluations")    # Checkpointing completely disabled to save space
     parser.add_argument("--save_strategy", type=str, default="no",
-                       choices=["no", "steps", "epoch"],
-                       help="Save strategy (intermediate checkpoint saving disabled)")
-    # Removed save_steps and save_total_limit to disable intermediate checkpoint saving
-    parser.add_argument("--load_best_model_at_end", type=bool, default=True,
-                       help="Load best model at end of training")
+                       choices=["no"],
+                       help="Save strategy (checkpointing disabled)")
+    parser.add_argument("--load_best_model_at_end", type=bool, default=False,
+                       help="Load best model at end (disabled to save space)")
     parser.add_argument("--metric_for_best_model", type=str, default="eval_accuracy",
                        help="Metric to use for best model selection")
     parser.add_argument("--greater_is_better", type=bool, default=True,
@@ -176,12 +175,7 @@ def parse_arguments() -> argparse.Namespace:
     # Reproducibility arguments
     parser.add_argument("--seed", type=int, default=42,
                        help="Random seed for reproducibility")
-    
-    # Additional arguments
-    parser.add_argument("--resume_from_checkpoint", type=str, default=None,
-                       help="Resume training from checkpoint")
-    parser.add_argument("--ignore_data_skip", type=bool, default=False,
-                       help="Ignore data skip when resuming")
+      # Additional arguments
     parser.add_argument("--run_name", type=str, default=None,
                        help="Run name for experiment tracking")
     parser.add_argument("--do_train", type=bool, default=True,
@@ -190,6 +184,8 @@ def parse_arguments() -> argparse.Namespace:
                        help="Whether to run evaluation")
     parser.add_argument("--do_predict", type=bool, default=False,
                        help="Whether to run prediction")
+    parser.add_argument("--eval_on_train", type=bool, default=True,
+                       help="Whether to evaluate on training set")
     
     return parser.parse_args()
 
@@ -285,12 +281,11 @@ def create_trainer(
         adam_beta1=args.adam_beta1,
         adam_beta2=args.adam_beta2,
         adam_epsilon=args.adam_epsilon,
-        max_grad_norm=args.max_grad_norm,
-        lr_scheduler_type=args.lr_scheduler_type,        eval_strategy=args.evaluation_strategy,
+        max_grad_norm=args.max_grad_norm,        lr_scheduler_type=args.lr_scheduler_type,
+        eval_strategy=args.evaluation_strategy,
         eval_steps=args.eval_steps,
-        save_strategy=args.save_strategy,
-        # Removed save_steps and save_total_limit to disable intermediate checkpoint saving
-        load_best_model_at_end=args.load_best_model_at_end,
+        save_strategy="no",  # Completely disable checkpointing
+        load_best_model_at_end=False,  # Disable to save space
         metric_for_best_model=args.metric_for_best_model,
         greater_is_better=args.greater_is_better,
         logging_dir=args.logging_dir,
@@ -504,8 +499,7 @@ def main():
     
     # Create trainer
     trainer = create_trainer(model, tokenizer, train_dataset, eval_dataset, args)
-    
-    # Training
+      # Training
     if args.do_train:
         logging.info("Starting training")
         
@@ -513,24 +507,34 @@ def main():
         if device == "cuda":
             log_gpu_memory_usage()
         
-        if args.resume_from_checkpoint:
-            trainer.train(resume_from_checkpoint=args.resume_from_checkpoint)
-        else:
-            trainer.train()
+        trainer.train()
         
         # Log final GPU memory usage
         if device == "cuda":
             log_gpu_memory_usage()
         
-        # Save final model
+        # Save only final model (no checkpoints)
         trainer.save_model()
         tokenizer.save_pretrained(args.output_dir)
         
         logging.info(f"Training completed. Model saved to {args.output_dir}")
     
-    # Evaluation
+    # Evaluation on training set
+    if args.do_train and args.eval_on_train:
+        logging.info("Running evaluation on training set")
+        train_eval_results = trainer.evaluate(eval_dataset=train_dataset)
+        
+        # Save training evaluation results
+        train_eval_results_path = os.path.join(args.output_dir, "train_eval_results.json")
+        with open(train_eval_results_path, 'w') as f:
+            json.dump(train_eval_results, f, indent=2)
+        
+        logging.info(f"Training set evaluation results: {train_eval_results}")
+        logging.info(f"Training set evaluation results saved to {train_eval_results_path}")
+    
+    # Evaluation on validation set
     if args.do_eval:
-        logging.info("Running evaluation")
+        logging.info("Running evaluation on validation set")
         eval_results = trainer.evaluate()
         
         # Save evaluation results
@@ -538,8 +542,8 @@ def main():
         with open(eval_results_path, 'w') as f:
             json.dump(eval_results, f, indent=2)
         
-        logging.info(f"Evaluation results: {eval_results}")
-        logging.info(f"Evaluation results saved to {eval_results_path}")
+        logging.info(f"Validation set evaluation results: {eval_results}")
+        logging.info(f"Validation set evaluation results saved to {eval_results_path}")
     
     # Prediction on test set
     if args.do_predict and test_dataset:
