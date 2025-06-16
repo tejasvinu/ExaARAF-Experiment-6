@@ -10,6 +10,9 @@ from pathlib import Path
 from typing import Dict, Any, Optional, List, Tuple
 import warnings # Added import
 
+# Fix tokenizer parallelism warnings when using multiple dataloader workers
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
 import pandas as pd
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support, classification_report
 from datasets import Dataset, DatasetDict, load_dataset
@@ -38,6 +41,7 @@ def setup_logging(log_level: str = "INFO") -> None:
             logging.StreamHandler()
         ]
     )
+    logging.info("Tokenizer parallelism disabled to prevent fork warnings with dataloader workers")
 
 
 def set_random_seed(seed: int) -> None:
@@ -147,8 +151,7 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument("--log_level", type=str, default="INFO",
                        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
                        help="Logging level")
-    
-    # Experiment tracking arguments
+      # Experiment tracking arguments
     parser.add_argument("--report_to", type=str, default="tensorboard",
                        choices=["tensorboard", "wandb", "none"],
                        help="Experiment tracking service")
@@ -157,7 +160,9 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument("--wandb_entity", type=str, default=None,
                        help="Weights & Biases entity name")
     parser.add_argument("--wandb_run_name", type=str, default=None,
-                       help="Weights & Biases run name")    # Hardware arguments
+                       help="Weights & Biases run name")
+    
+    # Hardware arguments
     parser.add_argument("--device", type=str, default="auto",
                        choices=["auto", "cpu", "cuda"],
                        help="Device to use for training")
@@ -165,8 +170,8 @@ def parse_arguments() -> argparse.Namespace:
                        help="Use mixed precision training (enabled by default for GPU performance)")
     parser.add_argument("--bf16", type=bool, default=False,
                        help="Use bfloat16 precision (use instead of fp16 on newer GPUs)")
-    parser.add_argument("--dataloader_num_workers", type=int, default=4,
-                       help="Number of dataloader workers (increased for better GPU utilization)")
+    parser.add_argument("--dataloader_num_workers", type=int, default=2,
+                       help="Number of dataloader workers (optimized to avoid tokenizer conflicts)")
     
     # Reproducibility arguments
     parser.add_argument("--seed", type=int, default=42,
@@ -440,18 +445,19 @@ def main():
 
     logging.info(f"Output directory: {args.output_dir}") # Print the output directory
     print(f"Results will be stored in: {args.output_dir}")
-    
-    # Print GPU optimization summary
+      # Print GPU optimization summary
     if device == "cuda":
         print("🚀 GPU Training Configuration:")
         print(f"   ✓ Device: {device}")
         print(f"   ✓ Mixed Precision: FP16={args.fp16}, BF16={args.bf16}")
-        print(f"   ✓ DataLoader Workers: {args.dataloader_num_workers}")
+        print(f"   ✓ DataLoader Workers: {args.dataloader_num_workers} (tokenizer-safe)")
         print(f"   ✓ GPU Optimizations: TF32, cuDNN benchmark enabled")
+        print(f"   ✓ Tokenizer Parallelism: Disabled (prevents fork warnings)")
     else:
         print(f"💻 CPU Training Configuration:")
         print(f"   ✓ Device: {device}")
-        print(f"   ✓ DataLoader Workers: {args.dataloader_num_workers}")
+        print(f"   ✓ DataLoader Workers: {args.dataloader_num_workers} (tokenizer-safe)")
+        print(f"   ✓ Tokenizer Parallelism: Disabled")
     
     # Save experiment configuration
     save_experiment_config(args, args.output_dir)

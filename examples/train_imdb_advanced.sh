@@ -4,9 +4,11 @@
 #SBATCH --error=heavy_test_job_error.log
 #SBATCH --time=03:00:00
 #SBATCH --ntasks=24
-# Advanced training with Weights & Biases tracking
 
-pythons train.py \
+# Advanced training with Weights & Biases tracking
+# Note: Tokenizer parallelism is automatically disabled to prevent fork warnings
+
+python train.py \
     --dataset_name imdb \
     --model_name bert-large-uncased \
     --num_labels 2 \
@@ -26,8 +28,6 @@ pythons train.py \
     --evaluation_strategy steps \
     --eval_steps 500 \
     --save_strategy "no" \
-    --save_steps 1000 \
-    --save_total_limit 1 \
     --load_best_model_at_end true \
     --metric_for_best_model eval_f1 \
     --early_stopping_patience 3 \
@@ -36,4 +36,5 @@ pythons train.py \
     --wandb_project bert-finetuning-advanced \
     --run_name imdb_bert_large_cosine \
     --fp16 true \
+    --dataloader_num_workers 2 \
     --seed 42
