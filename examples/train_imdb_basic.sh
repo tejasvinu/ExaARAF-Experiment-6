@@ -7,7 +7,7 @@
 
 # Basic IMDB sentiment analysis training
 
-python train.py \
+python3 train.py \
     --dataset_name imdb \
     --model_name bert-base-uncased \
     --num_labels 2 \

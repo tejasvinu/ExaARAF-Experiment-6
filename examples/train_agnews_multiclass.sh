@@ -6,7 +6,7 @@
 #SBATCH --ntasks=24
 # Multi-class text classification on AG News dataset
 
-python train.py \
+python3 train.py \
     --dataset_name ag_news \
     --text_column text \
     --label_column label \
