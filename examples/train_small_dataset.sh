@@ -6,7 +6,7 @@
 #SBATCH --ntasks=24
 # Training on a small subset for testing
 
-python3 train.py \
+python train.py \
     --dataset_name imdb \
     --max_samples 1000 \
     --model_name distilbert-base-uncased \

@@ -6,7 +6,7 @@
 #SBATCH --ntasks=24
 # Advanced training with Weights & Biases tracking
 
-python3 train.py \
+pythons train.py \
     --dataset_name imdb \
     --model_name bert-large-uncased \
     --num_labels 2 \

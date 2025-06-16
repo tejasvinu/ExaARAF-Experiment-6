@@ -6,7 +6,7 @@
 #SBATCH --ntasks=24
 # Evaluate a fine-tuned model
 
-python3 evaluate.py \
+python evaluate.py \
     --model_path ./results/imdb_bert_base \
     --dataset_name imdb \
     --test_split test \
