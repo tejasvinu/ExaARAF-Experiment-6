@@ -6,7 +6,7 @@
 #SBATCH --ntasks=24
 # Advanced training with Weights & Biases tracking
 
-/opt/miniforge3/bin/python train.py \
+python train.py \
     --dataset_name imdb \
     --model_name bert-large-uncased \
     --num_labels 2 \

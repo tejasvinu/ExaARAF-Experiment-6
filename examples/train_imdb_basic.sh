@@ -7,7 +7,7 @@
 
 # Basic IMDB sentiment analysis training
 
-/opt/miniforge3/bin/python train.py \
+python train.py \
     --dataset_name imdb \
     --model_name bert-base-uncased \
     --num_labels 2 \
